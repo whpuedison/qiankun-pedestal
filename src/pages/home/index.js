@@ -1,10 +1,11 @@
 import React from 'react';
+import { sky } from './index.less';
 
 function Home() {
   return (
-    <div>
-      <h2>Home</h2>
-      <p>Welcome to the Home page!</p>
+    <div className={sky}>
+      1111
+      <span className="main">222</span>
     </div>
   );
 }

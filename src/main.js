@@ -5,19 +5,16 @@ import routes from './routes';
 function App() {
   return (
     <BrowserRouter>
-      <div />
-      <div>
-        <Routes>
-          {routes.map((route, index) => (
-            <Route
-              key={index}
-              path={route.path}
-              exact={route.exact}
-              Component={route.component}
-            />
-          ))}
-        </Routes>
-      </div>
+      <Routes>
+        {routes.map((route, index) => (
+          <Route
+            key={index}
+            path={route.path}
+            exact={route.exact}
+            Component={route.component}
+          />
+        ))}
+      </Routes>
     </BrowserRouter>
   );
 }

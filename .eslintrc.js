@@ -20,6 +20,7 @@ module.exports = {
   ],
   rules: {
     'react/no-array-index-key': 0,
+    'import/no-extraneous-dependencies': 0,
     'react/jsx-closing-tag-location': 0,
     'react/jsx-filename-extension': [1, { extensions: ['.js', '.jsx'] }],
   },

@@ -1,0 +1,36 @@
+.root {
+    width: 100vw;
+    height: 100vh;
+    .placeholderList {
+        overflow-y: auto;
+        .realList {
+            display: flex;
+            flex-direction: column;
+            .chatItem {
+                display: flex;
+                align-items: center;
+                column-gap: 8px;
+                height: 50px;
+                &:nth-child(even) {
+                    background-color: #f6f6f6;
+                }
+                img {
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 50%;
+                }
+                .chatContent {
+                    display: flex;
+                    align-items: center;
+                    column-gap: 12px;
+                    .nickname {
+                        color: #000;
+                    }
+                    .message {
+                        color: #000;
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { root, placeholderList, realList, chatItem, chatContent, nickname, message } from './index.less';
 import Mock from 'mockjs';
 
@@ -39,13 +39,25 @@ const generateChatData = (num) => {
 const chatData = generateChatData(200);
 
 const MIN_FRESH_TIME = 1000;
+const CHAT_ITEM_HEIGHT = 50;
+const RESTOCK_COUNT = 4
 
 const VirtualList = () => {
     const [chatList, setChatList] = useState(chatData);
+    const scrollRef = useRef()
     const realListRef = useRef()
     const delayTimer = useRef()
     const cacheQueue = useRef([])
 
+    const [scrollHeight, setScrollHeight] = useState(0)
+    const [startIndex, setStartIndex] = useState(0)
+    const [endIndex, setEndIndex] = useState(0)
+    const rootRef = useRef()
+    const fillCountRef = useRef(0)
+
+    const visiblelist = chatList?.slice(startIndex, endIndex)
+
+    console.log('visiblelist', visiblelist)
 
     const appendData = () => {
         // 生成一个介于 x 到 y 之间的随机数量的数据
@@ -64,22 +76,43 @@ const VirtualList = () => {
     }
 
     const scrollIntoBottom = () => {
-        const currentLastItem = realListRef.current.lastChild;
-        currentLastItem.scrollIntoView({ behavior: 'smooth' });
+        if (chatList.length) {
+            console.log(chatList)
+            const chatLength = chatList.length
+            const totalCount = fillCountRef.current + RESTOCK_COUNT
+            const _startIndex = chatLength - totalCount
+            setStartIndex(_startIndex)
+            setEndIndex(chatLength)
+        }
+    }
+
+    const handleScroll = e => {
+        console.log(e)
     }
 
     useEffect(() => {
-        console.log(chatList.length)
+        realListRef.current.style.transform = `translate3d(0, ${startIndex * CHAT_ITEM_HEIGHT}px, 0)` /* 偏移，造成下滑效果 */
+        console.log(startIndex, endIndex)
+    }, [startIndex, endIndex])
+
+    useEffect(() => {
         requestAnimationFrame(scrollIntoBottom)
+        setScrollHeight(CHAT_ITEM_HEIGHT * chatList.length);
     }, [chatList])
 
-    useEffect(() => {
-        setInterval(() => {
-            appendData()
-        }, 400);
-    }, [])
+    const caculateFillCount = () => {
+        const rootHight = rootRef.current.offsetHeight
+        fillCountRef.current = Math.ceil(rootHight / CHAT_ITEM_HEIGHT)
+    }
 
     useEffect(() => {
+        // 计算填充数量
+        caculateFillCount()
+
+        // setInterval(() => {
+        //     appendData()
+        // }, 400);
+
         // 清理延迟计时器
         return () => {
             if (delayTimer.current) {
@@ -89,11 +122,16 @@ const VirtualList = () => {
     }, []);
 
     return (
-        <div className={root}>
-            <div className={placeholderList}>
+        <div className={root} ref={rootRef}>
+            <div 
+                className={placeholderList} 
+                style={{height: `${CHAT_ITEM_HEIGHT * chatList.length}px`}} 
+                ref={scrollRef}
+                onScroll={handleScroll}
+            >
                 <div className={realList} ref={realListRef}>
                     {
-                        chatList.map((item, index) => (
+                        visiblelist?.map((item, index) => (
                             <div key={index} className={chatItem}>
                                 <img src={item.avatar} alt="avatar" />
                                 <div className={chatContent}>

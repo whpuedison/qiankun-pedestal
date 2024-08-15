@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { root, placeholderList, realList, chatItem, chatContent, nickname, message } from './index.less';
 import Mock from 'mockjs';
 
@@ -16,62 +16,82 @@ const generateMessageWithEmojis = () => {
 };
 
 const generateChatData = (num) => {
-  return Mock.mock({
-    [`chats|${num}`]: [
-      {
-        'avatar': '@image("100x100", "#ffccff", "#000000", "Avatar")', // 生成头像图片的 URL
-        'nickname': '@cname', // 中文名字
-        'message': () => generateMessageWithEmojis() // 生成带有多个表情包的发言
-      }
-    ]
-  }).chats;
+    // 当 num 小于等于 0 时返回空数组
+    if (num <= 0) {
+        return [];
+    }
+
+    // 确保 Mock.mock 能正确生成单个对象的数组
+    const result = Mock.mock({
+        [`chats|${num}`]: [
+            {
+                'avatar': '@image("100x100", "#ffccff", "#000000", "Avatar")', // 生成头像图片的 URL
+                'nickname': '@cname', // 中文名字
+                'message': () => generateMessageWithEmojis() // 生成带有多个表情包的发言
+            }
+        ]
+    });
+
+    // 检查返回结果是否是数组，如果不是则处理为数组
+    return result.chats instanceof Array ? result.chats : [result.chats];
 };
 
-const chatData = generateChatData(100);
+const chatData = generateChatData(200);
 
-// 监控FPS
-const rAF = window.requestAnimationFrame || window.webkitRequestAnimationFrame || (callback => setTimeout(callback, 1000 / 60));
-const average = numbers => Math.round(numbers.reduce((sum, value) => sum + value, 0) / numbers.length);
-
-let frame = 0
-let initTime = Date.now();
-let fpsArr = []
-
-const loop = () => {
-    let now = Date.now();
-    frame++;
-    if (now - initTime > 1000) {
-        let fps = Math.round((frame * 1000) / (now - initTime));
-        fpsArr.push(fps);
-        console.log(`fps: ${fps}, 最小值: ${Math.min(...fpsArr)}, 最大值: ${Math.max(...fpsArr)}, 平均值: ${average(fpsArr)}`);
-        frame = 0;
-        initTime = now;
-    }
-    rAF(loop);
-}
-
-rAF(loop);
+const MIN_FRESH_TIME = 1000;
 
 const VirtualList = () => {
     const [chatList, setChatList] = useState(chatData);
+    const realListRef = useRef()
+    const delayTimer = useRef()
+    const cacheQueue = useRef([])
+
 
     const appendData = () => {
-        // 生成一个介于 500 到 2000 之间的随机数量的数据
-        const numEntries = Mock.Random.integer(50, 20);
+        // 生成一个介于 x 到 y 之间的随机数量的数据
+        const numEntries = Mock.Random.integer(0, 1);
         const newChatData = generateChatData(numEntries);
-        setChatList(list => [...list,...newChatData]);
+        cacheQueue.current = [...cacheQueue.current, ...newChatData];
+        if (!delayTimer.current) {
+            delayTimer.current = setTimeout(() => {
+                const cacheQueueList = cacheQueue.current;
+                cacheQueue.current = []
+                setChatList(list => [...list, ...cacheQueueList]);
+                clearTimeout(delayTimer.current)
+                delayTimer.current = null;
+            }, MIN_FRESH_TIME);
+        }
     }
+
+    const scrollIntoBottom = () => {
+        const currentLastItem = realListRef.current.lastChild;
+        currentLastItem.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    useEffect(() => {
+        console.log(chatList.length)
+        requestAnimationFrame(scrollIntoBottom)
+    }, [chatList])
 
     useEffect(() => {
         setInterval(() => {
             appendData()
-        }, 5000);
+        }, 400);
     }, [])
+
+    useEffect(() => {
+        // 清理延迟计时器
+        return () => {
+            if (delayTimer.current) {
+                clearTimeout(delayTimer.current);
+            }
+        };
+    }, []);
 
     return (
         <div className={root}>
             <div className={placeholderList}>
-                <div className={realList}>
+                <div className={realList} ref={realListRef}>
                     {
                         chatList.map((item, index) => (
                             <div key={index} className={chatItem}>

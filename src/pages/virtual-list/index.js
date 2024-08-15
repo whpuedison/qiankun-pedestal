@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { root, placeholderList, realList, chatItem, chatContent, nickname, message } from './index.less';
+import React, { useEffect, useState, useRef } from 'react';
+import { throttle } from 'lodash'
+import { root, realList, chatItem, chatContent, nickname, message, newMessage } from './index.less';
 import Mock from 'mockjs';
 
 // 定义表情包
@@ -38,26 +39,45 @@ const generateChatData = (num) => {
 
 const chatData = generateChatData(200);
 
+// 创建 IntersectionObserver 实例
+const observer = new IntersectionObserver((entries, observer) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            console.log('目标元素进入视口');
+            // 可以在这里处理目标元素进入视口后的逻辑
+            // 例如，加载图片或执行动画
+        } else {
+            console.log('目标元素离开视口');
+            // 可以在这里处理目标元素离开视口后的逻辑
+        }
+    });
+}, {
+    root: null, // 视口为默认的浏览器视口
+    rootMargin: '0px', // 视口的边距
+    threshold: 1.0 // 目标元素的可见度阈值（1.0表示完全可见）
+});
+
 const MIN_FRESH_TIME = 1000;
 const CHAT_ITEM_HEIGHT = 50;
 const RESTOCK_COUNT = 4
 
 const VirtualList = () => {
     const [chatList, setChatList] = useState(chatData);
-    const scrollRef = useRef()
+    const preChatListRef = useRef([])
+    const preChatList = preChatListRef.current
     const realListRef = useRef()
     const delayTimer = useRef()
     const cacheQueue = useRef([])
-
-    const [scrollHeight, setScrollHeight] = useState(0)
     const [startIndex, setStartIndex] = useState(0)
     const [endIndex, setEndIndex] = useState(0)
     const rootRef = useRef()
     const fillCountRef = useRef(0)
-
-    const visiblelist = chatList?.slice(startIndex, endIndex)
-
-    console.log('visiblelist', visiblelist)
+    const totalHeight = chatList.length * CHAT_ITEM_HEIGHT
+    const visibleList = chatList?.slice(startIndex, endIndex)
+    const initFlag = useRef(true)
+    const isScrollAtBottomFlag = useRef(true)
+    const newMessageCount = chatList.length - preChatList.length
+    const [showMessageCount, setShowMessageCount] = useState(false)
 
     const appendData = () => {
         // 生成一个介于 x 到 y 之间的随机数量的数据
@@ -75,29 +95,54 @@ const VirtualList = () => {
         }
     }
 
-    const scrollIntoBottom = () => {
+    const scrollIntoBottom = active => {
         if (chatList.length) {
-            console.log(chatList)
             const chatLength = chatList.length
             const totalCount = fillCountRef.current + RESTOCK_COUNT
             const _startIndex = chatLength - totalCount
-            setStartIndex(_startIndex)
-            setEndIndex(chatLength)
+            if(initFlag.current || isScrollAtBottomFlag.current || active) {
+                preChatListRef.current = chatList
+                setShowMessageCount(false)
+                setStartIndex(_startIndex)
+                setEndIndex(chatLength)
+                realListRef.current.style.transform = `translate3d(0, ${_startIndex * CHAT_ITEM_HEIGHT}px, 0)`
+                rootRef.current.scrollTo(
+                    {
+                        top: totalHeight,
+                        behavior: "smooth"
+                    }
+                )
+                initFlag.current = false
+            } else {
+                setShowMessageCount(true)
+            }
         }
     }
 
-    const handleScroll = e => {
-        console.log(e)
+    const isScrollAtBottom = () => {
+        const { scrollHeight, scrollTop, clientHeight } = rootRef.current
+        return scrollTop + clientHeight >= scrollHeight
     }
 
     useEffect(() => {
-        realListRef.current.style.transform = `translate3d(0, ${startIndex * CHAT_ITEM_HEIGHT}px, 0)` /* 偏移，造成下滑效果 */
-        console.log(startIndex, endIndex)
-    }, [startIndex, endIndex])
+        rootRef.current.addEventListener('scroll', throttle(() => {
+            isScrollAtBottomFlag.current = isScrollAtBottom()
+        }, 500))
+    }, [])
+
+    const handleScroll = throttle(() => {
+        const { scrollTop } = rootRef.current
+        const newStartIndex = Math.floor(scrollTop / CHAT_ITEM_HEIGHT)
+        const newEndIndex = newStartIndex + fillCountRef.current + RESTOCK_COUNT
+        if (newStartIndex!== startIndex) {
+            setStartIndex(newStartIndex)
+            setEndIndex(newEndIndex)
+            realListRef.current.style.transform = `translate3d(0, ${newStartIndex * CHAT_ITEM_HEIGHT}px, 0)`
+        }
+    }, 200)
 
     useEffect(() => {
-        requestAnimationFrame(scrollIntoBottom)
-        setScrollHeight(CHAT_ITEM_HEIGHT * chatList.length);
+        requestAnimationFrame(() => scrollIntoBottom())
     }, [chatList])
 
     const caculateFillCount = () => {
@@ -109,9 +154,9 @@ const VirtualList = () => {
         // 计算填充数量
         caculateFillCount()
 
-        // setInterval(() => {
-        //     appendData()
-        // }, 400);
+        setInterval(() => {
+            appendData()
+        }, 1000);
 
         // 清理延迟计时器
         return () => {
@@ -122,27 +167,24 @@ const VirtualList = () => {
     }, []);
 
     return (
-        <div className={root} ref={rootRef}>
-            <div 
-                className={placeholderList} 
-                style={{height: `${CHAT_ITEM_HEIGHT * chatList.length}px`}} 
-                ref={scrollRef}
-                onScroll={handleScroll}
-            >
-                <div className={realList} ref={realListRef}>
-                    {
-                        visiblelist?.map((item, index) => (
-                            <div key={index} className={chatItem}>
-                                <img src={item.avatar} alt="avatar" />
-                                <div className={chatContent}>
-                                    <div className={nickname}>{item.nickname}</div>
-                                    <div className={message}>{item.message}</div>
-                                </div>
+        <div className={root} ref={rootRef} onScroll={handleScroll}>
+            <div style={{height: `${totalHeight}px`}}/>
+            <div className={realList} ref={realListRef}>
+                {
+                    visibleList?.map((item, index) => (
+                        <div key={index} className={chatItem}>
+                            <img src={item.avatar} alt="avatar" />
+                            <div className={chatContent}>
+                                <div className={nickname}>{item.nickname}</div>
+                                <div className={message}>{item.message}</div>
                             </div>
-                        ))
-                    }
-                </div>
+                        </div>
+                    ))
+                }
             </div>
+            { showMessageCount && !!newMessageCount &&
+                <div onClick={() => scrollIntoBottom(true)} className={newMessage}>{newMessageCount}条新消息</div>
+            }
         </div>
     )
 }

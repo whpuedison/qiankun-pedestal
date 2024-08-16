@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useLayoutEffect } from 'react';
 import { throttle } from 'lodash'
 import { root, realList, chatItem, chatContent, nickname, message, newMessage } from './index.less';
 import Mock from 'mockjs';
@@ -10,10 +10,16 @@ const emojis = [
 ];
 
 const generateMessageWithEmojis = () => {
-    // 生成 10 到 20 个表情包
-    const numberOfEmojis = Mock.Random.integer(5, 10);
+    // 生成 5 到 100 个随机的汉字
+    const numberOfWords = Mock.Random.integer(5, 100);
+    const randomWords = Mock.Random.cword('零一二三四五六七八九十百千万亿甲乙丙丁戊己庚辛壬癸子丑寅卯辰巳午未申酉戌亥天地玄黄宇宙洪荒日月盈昃辰宿列张寒来暑往秋收冬藏', numberOfWords);
+
+    // 生成 1 到 2 个表情包
+    const numberOfEmojis = Mock.Random.integer(1, 2);
     const emojisString = Array.from({ length: numberOfEmojis }, () => Mock.Random.pick(emojis)).join(' ');
-    return emojisString;
+
+    // 将随机汉字和表情组合成最终消息
+    return `${randomWords} ${emojisString}`;
 };
 
 const generateChatData = (num) => {
@@ -78,6 +84,7 @@ const VirtualListPro = () => {
     const isScrollAtBottomFlag = useRef(true)
     const newMessageCount = chatList.length - preChatList.length
     const [showMessageCount, setShowMessageCount] = useState(false)
+    const [firstItemMarginTop, setFirstItemMarginTop] = useState(0)
 
     const appendData = () => {
         // 生成一个介于 x 到 y 之间的随机数量的数据
@@ -105,13 +112,19 @@ const VirtualListPro = () => {
                 setShowMessageCount(false)
                 setStartIndex(_startIndex)
                 setEndIndex(chatLength)
-                realListRef.current.style.transform = `translate3d(0, ${_startIndex * CHAT_ITEM_HEIGHT}px, 0)`
-                rootRef.current.scrollTo(
-                    {
+                requestAnimationFrame(() => {
+                    const children = Array.from(realListRef.current.children || [])
+                    let total = 0
+                    children?.forEach(item => {
+                        total += item.getBoundingClientRect().height
+                    })
+                    setFirstItemMarginTop(totalHeight - total)
+                    realListRef.current.style.transform = `translate3d(0, ${totalHeight - total}px, 0)`
+                    rootRef.current.scrollTo({
                         top: totalHeight,
                         behavior: "smooth"
-                    }
-                )
+                    })
+                })
                 initFlag.current = false
             } else {
                 setShowMessageCount(true)
@@ -131,14 +144,14 @@ const VirtualListPro = () => {
     }, [])
 
     const handleScroll = throttle(() => {
-        const { scrollTop } = rootRef.current
-        const newStartIndex = Math.floor(scrollTop / CHAT_ITEM_HEIGHT)
-        const newEndIndex = newStartIndex + fillCountRef.current + RESTOCK_COUNT
-        if (newStartIndex!== startIndex) {
-            setStartIndex(newStartIndex)
-            setEndIndex(newEndIndex)
-            realListRef.current.style.transform = `translate3d(0, ${newStartIndex * CHAT_ITEM_HEIGHT}px, 0)`
-        }
+        // const { scrollTop } = rootRef.current
+        // const newStartIndex = Math.floor(scrollTop / CHAT_ITEM_HEIGHT)
+        // const newEndIndex = newStartIndex + fillCountRef.current + RESTOCK_COUNT
+        // if (newStartIndex!== startIndex) {
+        //     setStartIndex(newStartIndex)
+        //     setEndIndex(newEndIndex)
+        //     realListRef.current.style.transform = `translate3d(0, ${newStartIndex * CHAT_ITEM_HEIGHT}px, 0)`
+        // }
     }, 200)
 
     useEffect(() => {
@@ -154,9 +167,9 @@ const VirtualListPro = () => {
         // 计算填充数量
         caculateFillCount()
 
-        setInterval(() => {
-            appendData()
-        }, 1000);
+        // setInterval(() => {
+        //     appendData()
+        // }, 1000);
 
         // 清理延迟计时器
         return () => {

@@ -11,10 +11,10 @@
         top: 0;
         .chatItem {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             column-gap: 8px;
-            height: 50px;
-            padding: 0 6px;
+            min-height: 50px;
+            padding: 6px;
             &:nth-child(even) {
                 background-color: #f6f6f6;
             }
@@ -25,10 +25,12 @@
             }
             .chatContent {
                 display: flex;
-                align-items: center;
+                align-items: flex-start;
                 column-gap: 12px;
+                line-height: 36px;
                 .nickname {
                     color: #000;
+                    flex: 0 0 50px;
                 }
                 .message {
                     color: #000;

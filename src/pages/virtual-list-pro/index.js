@@ -40,22 +40,22 @@ const generateChatData = (num) => {
 const chatData = generateChatData(200);
 
 // 创建 IntersectionObserver 实例
-const observer = new IntersectionObserver((entries, observer) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            console.log('目标元素进入视口');
-            // 可以在这里处理目标元素进入视口后的逻辑
-            // 例如，加载图片或执行动画
-        } else {
-            console.log('目标元素离开视口');
-            // 可以在这里处理目标元素离开视口后的逻辑
-        }
-    });
-}, {
-    root: null, // 视口为默认的浏览器视口
-    rootMargin: '0px', // 视口的边距
-    threshold: 1.0 // 目标元素的可见度阈值（1.0表示完全可见）
-});
+// const observer = new IntersectionObserver((entries, observer) => {
+//     entries.forEach(entry => {
+//         if (entry.isIntersecting) {
+//             console.log('目标元素进入视口');
+//             // 可以在这里处理目标元素进入视口后的逻辑
+//             // 例如，加载图片或执行动画
+//         } else {
+//             console.log('目标元素离开视口');
+//             // 可以在这里处理目标元素离开视口后的逻辑
+//         }
+//     });
+// }, {
+//     root: null, // 视口为默认的浏览器视口
+//     rootMargin: '0px', // 视口的边距
+//     threshold: 1.0 // 目标元素的可见度阈值（1.0表示完全可见）
+// });
 
 const MIN_FRESH_TIME = 1000;
 const CHAT_ITEM_HEIGHT = 50;

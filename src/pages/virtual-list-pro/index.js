@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { throttle } from 'lodash'
-import { root, chatList, renderList, chatItem, chatContent, nickname, message } from './index.less'
+import { root, chatList, renderList, chatItem, chatContent, nickname, message, unReadInfo } from './index.less'
 import Mock from 'mockjs';
 
 // 定义表情包
@@ -47,7 +47,8 @@ const BUFFER_COUNT = 0; // 列表项需要缓冲的数量
 const MIN_FRESH_TIME = 1000 // 消息队列刷新时间
 
 const VirtualListPro = () => {
-    const [list, setList] = useState([]) // 原始数据
+    const [list, setList] = useState([]) // 完整数据
+    const preListRef = useRef([]) // 前一批完整数据
     const [data, setData] = useState([]) // 渲染数据
     const [listHeight, setListHeight] = useState(0) // 列表高度
     const [renderCount, setRenderCount] = useState(0) // 列表项需要渲染的数量
@@ -68,6 +69,10 @@ const VirtualListPro = () => {
     const delayTimer = useRef(null) // 缓存计时器
     const chatTimer = useRef(null) // 聊天计时器
     const isAutoScrollRef = useRef(true) // 是否需要自动滚动
+
+    const unReadInfoCount = useMemo(() => {
+        return isAutoScrollRef.current ? 0 : list.length - preListRef.current.length
+    }, [list, isAutoScrollRef.current]) // 未读消息数量
 
     // 模拟聊天，在一定时间内缓存消息
     const appendData = () => {
@@ -98,14 +103,16 @@ const VirtualListPro = () => {
     }, [])
 
     // 滚动到最底部
-    const scrollToBottom = () => {
-        if (!isAutoScrollRef.current) return
-        chatRef.current.scrollTo(
-            {
-                top: listHeight,
-                behavior: "smooth"
-            }
-        )
+    const scrollToBottom = ({ forceScroll } = {}) => {
+        if (isAutoScrollRef.current || forceScroll) {
+            preListRef.current = list
+            chatRef.current.scrollTo(
+                {
+                    top: forceScroll ? list.length * INIT_ITEM_HEIGHT * 4 : listHeight,
+                    behavior: "smooth"
+                }
+            )
+        }
     }
 
     useEffect(() => {
@@ -255,6 +262,12 @@ const VirtualListPro = () => {
                         ))
                     }
                 </div>
+                { !!unReadInfoCount &&
+                    <div 
+                        onClick={() => scrollToBottom({forceScroll: true})} 
+                        className={unReadInfo}
+                    >{unReadInfoCount}条新消息</div>
+                }
             </div>
         </div>
     )    

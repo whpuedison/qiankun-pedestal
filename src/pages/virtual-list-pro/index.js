@@ -102,24 +102,24 @@ const VirtualListPro = () => {
                     dHeight: dHeight //差值保留，留给后面元素计算使用
                 }
             }
-            const startId = +nodes[0].id // 开始渲染的元素的索引
-            const positionsLength = positions.length
-            let totalDHeight = positions[startId].dHeight // 累计差值，仅对后面元素有影响
-            positions[startId].dHeight = 0
-            for (let i = startId + 1; i < positionsLength; i++) {
-                const item = positions[i]
-                positions[index] = {
-                    ...positions[index],
-                    top: positions[index - 1]?.bottom,
-                    bottom: positions[index].bottom - totalDHeight, // 将自身能算的先算
-                }
-                if (item.dHeight) {
-                    totalDHeight += item.dHeight
-                    item.dHeight = 0
-                }
-            }
-            setListHeight(positions.at(-1)?.bottom)
         })
+        const startId = +nodes[0].id // 开始渲染的元素的索引
+        const positionsLength = positions.length
+        let totalDHeight = positions[startId].dHeight // 累计差值，仅对后面元素有影响
+        positions[startId].dHeight = 0
+        for (let i = startId + 1; i < positionsLength; i++) {
+            const item = positions[i]
+            positions[i] = {
+                ...positions[i],
+                top: positions[i - 1]?.bottom,
+                bottom: positions[i].bottom - totalDHeight, // 将自身能算的先算
+            }
+            if (item.dHeight) {
+                totalDHeight += item.dHeight
+                positions[i].dHeight = 0
+            }
+        }
+        setListHeight(positions.at(-1)?.bottom)
       }
 
       useEffect(() => {
@@ -133,6 +133,7 @@ const VirtualListPro = () => {
         const _renderCount = Math.ceil(chatAreaHeight / INIT_ITEM_HEIGHT) // 所需渲染的列表项
         const _listHeight = positions.at(-1)?.bottom // 列表长度
         const _end = _renderCount + BUFFER_COUNT
+        // if (_end > list.length) return
         setRenderCount(_renderCount)
         setEnd(_end)
         setListHeight(_listHeight)
@@ -167,7 +168,6 @@ const VirtualListPro = () => {
         setStart(_start)
         setEnd(_end)
         setCurrentOffset(_start > 0 ? positions[_start - 1].bottom : 0)
-        console.log(`start: ${_start}, end: ${_end}, currentOffset: ${positions[_start - 1]?.bottom || 0}`)
     }, 100)
 
     useEffect(() => {

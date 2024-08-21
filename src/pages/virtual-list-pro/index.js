@@ -67,6 +67,7 @@ const VirtualListPro = () => {
     const cacheQueueRef = useRef([]) // 缓存消息队列
     const delayTimer = useRef(null) // 缓存计时器
     const chatTimer = useRef(null) // 聊天计时器
+    const isAutoScrollRef = useRef(true) // 是否需要自动滚动
 
     // 模拟聊天，在一定时间内缓存消息
     const appendData = () => {
@@ -175,6 +176,7 @@ const VirtualListPro = () => {
 
     // 监听列表长度变化，更新显示
     useEffect(() => {
+        if (!isAutoScrollRef.current) return
         const chatAreaHeight = chatRef.current?.offsetHeight // 聊天区域高度
         const _renderCount = Math.ceil(chatAreaHeight / INIT_ITEM_HEIGHT) // 所需渲染的列表项
         const _listHeight = positions.at(-1)?.bottom // 列表长度
@@ -215,6 +217,11 @@ const VirtualListPro = () => {
         setStart(_start)
         setEnd(_end)
         setCurrentOffset(_start > 0 ? positions[_start - 1].bottom : 0)
+        // 判断是否在底部
+        const { scrollHeight, clientHeight, scrollTop } = chatRef.current
+        console.log('scroll', scrollTop)
+
+        isAutoScrollRef.current = scrollHeight - clientHeight - scrollTop <= 0
     }, 100)
 
     useEffect(() => {

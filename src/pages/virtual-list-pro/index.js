@@ -40,17 +40,17 @@ const generateChatData = (num) => {
     return result.chats instanceof Array ? result.chats : [result.chats];
 };
 
-const chatData = generateChatData(200);
+// const chatData = generateChatData(200);
 
 const INIT_ITEM_HEIGHT = 48; // 初始列表项高度
 const BUFFER_COUNT = 0; // 列表项需要缓冲的数量
+const MIN_FRESH_TIME = 1000 // 消息队列刷新时间
 
 const VirtualListPro = () => {
-    const [list, setList] = useState(chatData) // 原始数据
+    const [list, setList] = useState([]) // 原始数据
     const [data, setData] = useState([]) // 渲染数据
     const [listHeight, setListHeight] = useState(0) // 列表高度
     const [renderCount, setRenderCount] = useState(0) // 列表项需要渲染的数量
-    const [bufferCount, setBufferCount] = useState(2) // 列表项需要缓冲的数量
     const [start, setStart] = useState(0) // 列表项开始渲染的位置
     const [end, setEnd] = useState(0) // 列表项结束渲染的位置
     const [currentOffset, setCurrentOffset] = useState(0) // 偏移量
@@ -64,6 +64,51 @@ const VirtualListPro = () => {
 
     const chatRef = useRef() // 聊天区
     const renderRef = useRef() // 渲染区
+    const cacheQueueRef = useRef([]) // 缓存消息队列
+    const delayTimer = useRef(null) // 缓存计时器
+    const chatTimer = useRef(null) // 聊天计时器
+
+    // 模拟聊天，在一定时间内缓存消息
+    const appendData = () => {
+        // 生成一个介于 x 到 y 之间的随机数量的数据
+        const numEntries = Mock.Random.integer(0, 1);
+        const newChatData = generateChatData(numEntries);
+        cacheQueueRef.current = [...cacheQueueRef.current, ...newChatData];
+        if (!delayTimer.current) {
+            delayTimer.current = setTimeout(() => {
+                const cacheQueueList = cacheQueueRef.current;
+                cacheQueueRef.current = []
+                setList(val => [...val, ...cacheQueueList].map((item, index) => ({...item, id: index })));
+                clearTimeout(delayTimer.current)
+                delayTimer.current = null;
+            }, MIN_FRESH_TIME);
+        }
+    }
+
+    useEffect(() => {
+        // 定时添加聊天
+        chatTimer.current = setInterval(() => {
+            appendData()
+        }, 1000);
+
+        return () => {
+            clearInterval(chatTimer.current)
+        };
+    }, [])
+
+    // 滚动到最底部
+    const scrollToBottom = () => {
+        chatRef.current.scrollTo(
+            {
+                top: listHeight,
+                behavior: "smooth"
+            }
+        )
+    }
+
+    useEffect(() => {
+        scrollToBottom()
+    }, [listHeight])
 
     const initPositions = () => {
         const data = []
@@ -82,7 +127,7 @@ const VirtualListPro = () => {
     useEffect(() => {
         // 初始高度
         initPositions()
-      }, [])
+      }, [list])
 
       const setPostition = () => {
         const nodes = renderRef.current?.childNodes
@@ -128,16 +173,18 @@ const VirtualListPro = () => {
         }
       }, [renderRef.current])
 
+    // 监听列表长度变化，更新显示
     useEffect(() => {
         const chatAreaHeight = chatRef.current?.offsetHeight // 聊天区域高度
         const _renderCount = Math.ceil(chatAreaHeight / INIT_ITEM_HEIGHT) // 所需渲染的列表项
         const _listHeight = positions.at(-1)?.bottom // 列表长度
-        const _end = _renderCount + BUFFER_COUNT
-        // if (_end > list.length) return
+        const _end = list.length
+        const _start = Math.max(0, _end - (renderCount + BUFFER_COUNT))
         setRenderCount(_renderCount)
+        setStart(_start)
         setEnd(_end)
+        setData(list.slice(_start, _end))
         setListHeight(_listHeight)
-        setData(list.slice(0, _end))
     }, [chatRef.current, list])
 
     const binarySearch = () => {
@@ -164,7 +211,7 @@ const VirtualListPro = () => {
 
     const handleScroll = throttle(() => {
         const _start = binarySearch()
-        const _end = _start + renderCount + bufferCount
+        const _end = _start + renderCount + BUFFER_COUNT
         setStart(_start)
         setEnd(_end)
         setCurrentOffset(_start > 0 ? positions[_start - 1].bottom : 0)

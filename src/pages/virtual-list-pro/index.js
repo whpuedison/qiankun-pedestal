@@ -3,19 +3,6 @@ import { throttle } from 'lodash'
 import { root, chatList, renderList, chatItem, chatContent, nickname, message, unReadInfo } from './index.less'
 import Mock from 'mockjs';
 
-// 定义表情包
-const emojis = [
-    '😀', '😂', '😍', '😎', '😭', '😡', '😜', '😇', '😱', '😈',
-    '👍', '👎', '🥺', '😢', '😳', '😋', '😬', '😑', '🥳', '😴'
-];
-
-const generateMessageWithEmojis = () => {
-    // 生成 1 到 20 个表情包
-    const numberOfEmojis = Mock.Random.integer(1, 20);
-    const emojisString = Array.from({ length: numberOfEmojis }, () => Mock.Random.pick(emojis)).join(' ');
-    return emojisString;
-};
-
 const generateChatData = (num) => {
     // 当 num 小于等于 0 时返回空数组
     if (num <= 0) {
@@ -31,7 +18,7 @@ const generateChatData = (num) => {
                     return Mock.Random.image('100x100', Mock.Random.color(), '#000000', 'Avatar');
                 }, // 生成头像图片的 URL，背景色为随机色
                 'nickname': '@cname', // 中文名字
-                'message': () => generateMessageWithEmojis() // 生成带有多个表情包的发言
+                'message': () => Mock.mock('@csentence(1, 20)')
             }
         ]
     });

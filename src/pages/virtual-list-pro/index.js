@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useRef, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { throttle } from 'lodash'
-import { root, realList, chatItem, chatContent, nickname, message, newMessage } from './index.less';
+import { root, chatList, renderList, chatItem, chatContent, nickname, message } from './index.less'
 import Mock from 'mockjs';
 
 // 定义表情包
@@ -10,16 +10,10 @@ const emojis = [
 ];
 
 const generateMessageWithEmojis = () => {
-    // 生成 5 到 100 个随机的汉字
-    const numberOfWords = Mock.Random.integer(5, 100);
-    const randomWords = Mock.Random.cword('零一二三四五六七八九十百千万亿甲乙丙丁戊己庚辛壬癸子丑寅卯辰巳午未申酉戌亥天地玄黄宇宙洪荒日月盈昃辰宿列张寒来暑往秋收冬藏', numberOfWords);
-
-    // 生成 1 到 2 个表情包
-    const numberOfEmojis = Mock.Random.integer(1, 2);
+    // 生成 1 到 20 个表情包
+    const numberOfEmojis = Mock.Random.integer(1, 20);
     const emojisString = Array.from({ length: numberOfEmojis }, () => Mock.Random.pick(emojis)).join(' ');
-
-    // 将随机汉字和表情组合成最终消息
-    return `${randomWords} ${emojisString}`;
+    return emojisString;
 };
 
 const generateChatData = (num) => {
@@ -32,7 +26,10 @@ const generateChatData = (num) => {
     const result = Mock.mock({
         [`chats|${num}`]: [
             {
-                'avatar': '@image("100x100", "#ffccff", "#000000", "Avatar")', // 生成头像图片的 URL
+                'id|+1': 0,
+                'avatar': function() {
+                    return Mock.Random.image('100x100', Mock.Random.color(), '#000000', 'Avatar');
+                }, // 生成头像图片的 URL，背景色为随机色
                 'nickname': '@cname', // 中文名字
                 'message': () => generateMessageWithEmojis() // 生成带有多个表情包的发言
             }
@@ -45,161 +42,169 @@ const generateChatData = (num) => {
 
 const chatData = generateChatData(200);
 
-// 创建 IntersectionObserver 实例
-// const observer = new IntersectionObserver((entries, observer) => {
-//     entries.forEach(entry => {
-//         if (entry.isIntersecting) {
-//             console.log('目标元素进入视口');
-//             // 可以在这里处理目标元素进入视口后的逻辑
-//             // 例如，加载图片或执行动画
-//         } else {
-//             console.log('目标元素离开视口');
-//             // 可以在这里处理目标元素离开视口后的逻辑
-//         }
-//     });
-// }, {
-//     root: null, // 视口为默认的浏览器视口
-//     rootMargin: '0px', // 视口的边距
-//     threshold: 1.0 // 目标元素的可见度阈值（1.0表示完全可见）
-// });
-
-const MIN_FRESH_TIME = 1000;
-const CHAT_ITEM_HEIGHT = 50;
-const RESTOCK_COUNT = 4
+const INIT_ITEM_HEIGHT = 48; // 初始列表项高度
+const BUFFER_COUNT = 0; // 列表项需要缓冲的数量
 
 const VirtualListPro = () => {
-    const [chatList, setChatList] = useState(chatData);
-    const preChatListRef = useRef([])
-    const preChatList = preChatListRef.current
-    const realListRef = useRef()
-    const delayTimer = useRef()
-    const cacheQueue = useRef([])
-    const [startIndex, setStartIndex] = useState(0)
-    const [endIndex, setEndIndex] = useState(0)
-    const rootRef = useRef()
-    const fillCountRef = useRef(0)
-    const totalHeight = chatList.length * CHAT_ITEM_HEIGHT
-    const visibleList = chatList?.slice(startIndex, endIndex)
-    const initFlag = useRef(true)
-    const isScrollAtBottomFlag = useRef(true)
-    const newMessageCount = chatList.length - preChatList.length
-    const [showMessageCount, setShowMessageCount] = useState(false)
-    const [firstItemMarginTop, setFirstItemMarginTop] = useState(0)
+    const [list, setList] = useState(chatData) // 原始数据
+    const [data, setData] = useState([]) // 渲染数据
+    const [listHeight, setListHeight] = useState(0) // 列表高度
+    const [renderCount, setRenderCount] = useState(0) // 列表项需要渲染的数量
+    const [bufferCount, setBufferCount] = useState(2) // 列表项需要缓冲的数量
+    const [start, setStart] = useState(0) // 列表项开始渲染的位置
+    const [end, setEnd] = useState(0) // 列表项结束渲染的位置
+    const [currentOffset, setCurrentOffset] = useState(0) // 偏移量
+    const [positions, setPositions] = useState([
+        // index 当前元素的下标
+        // top 顶部位置
+        // bottom 底部位置
+        // height 元素的高度
+        // dHeight 用于判断元素是否需要改变
+    ]) // 需要记录每一项的高度
 
-    const appendData = () => {
-        // 生成一个介于 x 到 y 之间的随机数量的数据
-        const numEntries = Mock.Random.integer(0, 1);
-        const newChatData = generateChatData(numEntries);
-        cacheQueue.current = [...cacheQueue.current, ...newChatData];
-        if (!delayTimer.current) {
-            delayTimer.current = setTimeout(() => {
-                const cacheQueueList = cacheQueue.current;
-                cacheQueue.current = []
-                setChatList(list => [...list, ...cacheQueueList]);
-                clearTimeout(delayTimer.current)
-                delayTimer.current = null;
-            }, MIN_FRESH_TIME);
+    const chatRef = useRef() // 聊天区
+    const renderRef = useRef() // 渲染区
+
+    const initPositions = () => {
+        const data = []
+        for (let i = 0; i < list.length; i++) {
+            data.push({
+                index: i,
+                height: INIT_ITEM_HEIGHT,
+                top: i * INIT_ITEM_HEIGHT,
+                bottom: (i + 1) * INIT_ITEM_HEIGHT,
+                dHeight: 0
+            })
         }
-    }
-
-    const scrollIntoBottom = active => {
-        if (chatList.length) {
-            const chatLength = chatList.length
-            const totalCount = fillCountRef.current + RESTOCK_COUNT
-            const _startIndex = chatLength - totalCount
-            if(initFlag.current || isScrollAtBottomFlag.current || active) {
-                preChatListRef.current = chatList
-                setShowMessageCount(false)
-                setStartIndex(_startIndex)
-                setEndIndex(chatLength)
-                requestAnimationFrame(() => {
-                    const children = Array.from(realListRef.current.children || [])
-                    let total = 0
-                    children?.forEach(item => {
-                        total += item.getBoundingClientRect().height
-                    })
-                    setFirstItemMarginTop(totalHeight - total)
-                    realListRef.current.style.transform = `translate3d(0, ${totalHeight - total}px, 0)`
-                    rootRef.current.scrollTo({
-                        top: totalHeight,
-                        behavior: "smooth"
-                    })
-                })
-                initFlag.current = false
-            } else {
-                setShowMessageCount(true)
-            }
-        }
-    }
-
-    const isScrollAtBottom = () => {
-        const { scrollHeight, scrollTop, clientHeight } = rootRef.current
-        return scrollTop + clientHeight >= scrollHeight
+        setPositions(data)
     }
 
     useEffect(() => {
-        rootRef.current.addEventListener('scroll', throttle(() => {
-            isScrollAtBottomFlag.current = isScrollAtBottom()
-        }, 500))
-    }, [])
+        // 初始高度
+        initPositions()
+      }, [])
+
+      const setPostition = () => {
+        const nodes = renderRef.current?.childNodes
+        if (!nodes.length) return
+        nodes.forEach(node => {
+            if (!node) return
+            const rect = node.getBoundingClientRect() // 获取元素的信息
+            const index = +node.id // 获取元素的索引
+            const oldHeight = positions[index].height // 获取旧的高度
+            const newHeight = rect.height // 获取新的高度
+            const dHeight = oldHeight - newHeight  // 元素需要改变的高度
+            if (dHeight) {
+                positions[index] = {
+                    ...positions[index],
+                    height: newHeight,
+                    bottom: positions[index].bottom - dHeight, // 将自身能算的先算
+                    dHeight: dHeight //差值保留，留给后面元素计算使用
+                }
+            }
+            const startId = +nodes[0].id // 开始渲染的元素的索引
+            const positionsLength = positions.length
+            let totalDHeight = positions[startId].dHeight // 累计差值，仅对后面元素有影响
+            positions[startId].dHeight = 0
+            for (let i = startId + 1; i < positionsLength; i++) {
+                const item = positions[i]
+                positions[index] = {
+                    ...positions[index],
+                    top: positions[index - 1]?.bottom,
+                    bottom: positions[index].bottom - totalDHeight, // 将自身能算的先算
+                }
+                if (item.dHeight) {
+                    totalDHeight += item.dHeight
+                    item.dHeight = 0
+                }
+            }
+            setListHeight(positions.at(-1)?.bottom)
+        })
+      }
+
+      useEffect(() => {
+        if (renderRef.current) {
+            setPostition()
+        }
+      }, [renderRef.current])
+
+    useEffect(() => {
+        const chatAreaHeight = chatRef.current?.offsetHeight // 聊天区域高度
+        const _renderCount = Math.ceil(chatAreaHeight / INIT_ITEM_HEIGHT) // 所需渲染的列表项
+        const _listHeight = positions.at(-1)?.bottom // 列表长度
+        const _end = _renderCount + BUFFER_COUNT
+        setRenderCount(_renderCount)
+        setEnd(_end)
+        setListHeight(_listHeight)
+        setData(list.slice(0, _end))
+    }, [chatRef.current, list])
+
+    const binarySearch = () => {
+        const { scrollTop } = chatRef.current
+        let startIndex = 0
+        let endIndex = positions.length - 1
+        let tempIndex = null
+        while (startIndex <= endIndex) {
+            const midIndex = Math.floor((startIndex + endIndex) / 2)
+            const midVal = positions[midIndex].bottom
+            if (midVal === scrollTop) {
+                return midIndex + 1
+            } else if (midVal < scrollTop) {
+                startIndex = midIndex + 1
+            } else if (midVal > scrollTop) {
+                if (tempIndex === null || tempIndex > midIndex) {
+                    tempIndex = midIndex
+                }
+                endIndex -= 1
+            }
+        }
+        return tempIndex
+    }
 
     const handleScroll = throttle(() => {
-        // const { scrollTop } = rootRef.current
-        // const newStartIndex = Math.floor(scrollTop / CHAT_ITEM_HEIGHT)
-        // const newEndIndex = newStartIndex + fillCountRef.current + RESTOCK_COUNT
-        // if (newStartIndex!== startIndex) {
-        //     setStartIndex(newStartIndex)
-        //     setEndIndex(newEndIndex)
-        //     realListRef.current.style.transform = `translate3d(0, ${newStartIndex * CHAT_ITEM_HEIGHT}px, 0)`
-        // }
-    }, 200)
+        const _start = binarySearch()
+        const _end = _start + renderCount + bufferCount
+        setStart(_start)
+        setEnd(_end)
+        setCurrentOffset(_start > 0 ? positions[_start - 1].bottom : 0)
+        console.log(`start: ${_start}, end: ${_end}, currentOffset: ${positions[_start - 1]?.bottom || 0}`)
+    }, 100)
 
     useEffect(() => {
-        requestAnimationFrame(() => scrollIntoBottom())
-    }, [chatList])
-
-    const caculateFillCount = () => {
-        const rootHight = rootRef.current.offsetHeight
-        fillCountRef.current = Math.ceil(rootHight / CHAT_ITEM_HEIGHT)
-    }
-
-    useEffect(() => {
-        // 计算填充数量
-        caculateFillCount()
-
-        // setInterval(() => {
-        //     appendData()
-        // }, 1000);
-
-        // 清理延迟计时器
-        return () => {
-            if (delayTimer.current) {
-                clearTimeout(delayTimer.current);
-            }
-        };
-    }, []);
+        setData(list.slice(start, end))
+        if (renderRef.current) {
+            setPostition()
+        }
+    }, [start])
 
     return (
-        <div className={root} ref={rootRef} onScroll={handleScroll}>
-            <div style={{height: `${totalHeight}px`}}/>
-            <div className={realList} ref={realListRef}>
-                {
-                    visibleList?.map((item, index) => (
-                        <div key={index} className={chatItem}>
-                            <img src={item.avatar} alt="avatar" />
-                            <div className={chatContent}>
-                                <div className={nickname}>{item.nickname}</div>
-                                <div className={message}>{item.message}</div>
+        <div className={root}>
+            <div 
+                className={chatList} 
+                ref={chatRef}
+                onScroll={handleScroll}
+            >
+                <div style={{height: `${listHeight}px`}}></div>
+                <div 
+                    style={{ transform: `translate3d(0, ${currentOffset}px, 0)`}}
+                    className={renderList} 
+                    ref={renderRef}
+                >
+                    {
+                        data?.map((item, index) => (
+                            <div id={item.id} key={index} className={chatItem}>
+                                <img src={item.avatar} alt="avatar" />
+                                <div className={chatContent}>
+                                    <div className={nickname}>{item.nickname}</div>
+                                    <div className={message}>{item.message}</div>
+                                </div>
                             </div>
-                        </div>
-                    ))
-                }
+                        ))
+                    }
+                </div>
             </div>
-            { showMessageCount && !!newMessageCount &&
-                <div onClick={() => scrollIntoBottom(true)} className={newMessage}>{newMessageCount}条新消息</div>
-            }
         </div>
-    )
+    )    
 }
 
 export default VirtualListPro

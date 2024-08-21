@@ -23,7 +23,7 @@ const loop = () => {
     rAF(loop);
 }
 
-rAF(loop);
+// rAF(loop);
 
 function App() {
   return (

@@ -99,6 +99,7 @@ const VirtualListPro = () => {
 
     // 滚动到最底部
     const scrollToBottom = () => {
+        if (!isAutoScrollRef.current) return
         chatRef.current.scrollTo(
             {
                 top: listHeight,
@@ -219,8 +220,6 @@ const VirtualListPro = () => {
         setCurrentOffset(_start > 0 ? positions[_start - 1].bottom : 0)
         // 判断是否在底部
         const { scrollHeight, clientHeight, scrollTop } = chatRef.current
-        console.log('scroll', scrollTop)
-
         isAutoScrollRef.current = scrollHeight - clientHeight - scrollTop <= 0
     }, 100)
 

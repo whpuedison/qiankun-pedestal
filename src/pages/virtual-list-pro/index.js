@@ -232,6 +232,7 @@ const VirtualListPro = () => {
                 onScroll={handleScroll}
             >
                 <div style={{height: `${listHeight}px`}}></div>
+                {/* 虚拟列表 */}
                 <div 
                     style={{ transform: `translate3d(0, ${currentOffset}px, 0)`}}
                     className={renderList} 
@@ -249,6 +250,20 @@ const VirtualListPro = () => {
                         ))
                     }
                 </div>
+                {/* 数据累加 */}
+                {/* <div className={renderList} >
+                    {
+                        list?.map((item, index) => (
+                            <div id={item.id} key={index} className={chatItem}>
+                                <img src={item.avatar} alt="avatar" />
+                                <div className={chatContent}>
+                                    <div className={nickname}>{item.nickname}</div>
+                                    <div className={message}>{item.message}</div>
+                                </div>
+                            </div>
+                        ))
+                    }
+                </div> */}
                 { !!unReadInfoCount &&
                     <div 
                         onClick={() => scrollToBottom({forceScroll: true})} 

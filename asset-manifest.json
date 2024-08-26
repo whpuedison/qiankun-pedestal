@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/qiankun-pedestal/static/css/main.063700ca.css",
-    "main.js": "/qiankun-pedestal/static/js/main.6776b173.js",
+    "main.js": "/qiankun-pedestal/static/js/main.0f856781.js",
     "static/css/774.6de2e430.chunk.css": "/qiankun-pedestal/static/css/774.6de2e430.chunk.css",
     "static/js/774.ea5fa245.chunk.js": "/qiankun-pedestal/static/js/774.ea5fa245.chunk.js",
     "static/css/236.8edcf699.chunk.css": "/qiankun-pedestal/static/css/236.8edcf699.chunk.css",
@@ -15,7 +15,7 @@
     "static/media/birds_bg.jpeg": "/qiankun-pedestal/static/media/birds_bg.5945b13b7b53034eb7d4.jpeg",
     "index.html": "/qiankun-pedestal/index.html",
     "main.063700ca.css.map": "/qiankun-pedestal/static/css/main.063700ca.css.map",
-    "main.6776b173.js.map": "/qiankun-pedestal/static/js/main.6776b173.js.map",
+    "main.0f856781.js.map": "/qiankun-pedestal/static/js/main.0f856781.js.map",
     "774.6de2e430.chunk.css.map": "/qiankun-pedestal/static/css/774.6de2e430.chunk.css.map",
     "774.ea5fa245.chunk.js.map": "/qiankun-pedestal/static/js/774.ea5fa245.chunk.js.map",
     "236.8edcf699.chunk.css.map": "/qiankun-pedestal/static/css/236.8edcf699.chunk.css.map",
@@ -29,6 +29,6 @@
   },
   "entrypoints": [
     "static/css/main.063700ca.css",
-    "static/js/main.6776b173.js"
+    "static/js/main.0f856781.js"
   ]
 }

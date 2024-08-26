@@ -1,0 +1,1 @@
+{"version":3,"file":"static/js/621.a13fb4a1.chunk.js","mappings":"kKAEA,MAMA,EANiBA,KAETC,EAAAA,EAAAA,KAAA,OAAAC,SAAK,Y","sources":["pages/lazy-load/index.js"],"sourcesContent":["import React from'react';\n\nconst LazyLoad = () => {\n    return (\n        <div>LazyLoad</div>\n    )\n}\n\nexport default LazyLoad"],"names":["LazyLoad","_jsx","children"],"sourceRoot":""}

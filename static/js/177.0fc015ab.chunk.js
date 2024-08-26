@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkreact_practice=self.webpackChunkreact_practice||[]).push([[177],{3177:(e,c,t)=>{t.r(c),t.d(c,{default:()=>n});var r=t(5043),s=t(6213),a=t(579);const n=()=>((0,r.useEffect)((()=>{s.A.get("/api/userinfo").then((e=>{console.log(e)}))}),[]),(0,a.jsx)("div",{children:"ConcurrentRequest"}))}}]);
+//# sourceMappingURL=177.0fc015ab.chunk.js.map

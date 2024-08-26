@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkreact_practice=self.webpackChunkreact_practice||[]).push([[416],{5416:(c,e,a)=>{a.r(e),a.d(e,{default:()=>s});a(5043);var r=a(579);const s=()=>(0,r.jsx)("div",{children:"BatchProcess"})}}]);
+//# sourceMappingURL=416.4dd75717.chunk.js.map

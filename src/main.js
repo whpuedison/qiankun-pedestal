@@ -27,7 +27,7 @@ rAF(loop);
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/qiankun-pedestal">
       <Suspense fallback='...'>
         <Routes>
           {routes.map((route, index) => (

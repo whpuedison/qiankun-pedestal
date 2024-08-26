@@ -29,6 +29,6 @@ jobs:
       uses: JamesIves/github-pages-deploy-action@v4.4.1
       with:
         token: ${{ secrets.QIAN_KUN_TOKEN }}
-        BRANCH: public 
+        BRANCH: master 
         FOLDER: build
 

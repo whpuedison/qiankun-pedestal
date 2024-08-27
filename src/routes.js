@@ -10,6 +10,7 @@ const ConcurrentRequest = lazy(() => import('./pages/concurrent-request'));
 const LazyLoad = lazy(() => import('./pages/lazy-load'));
 const BatchProcess = lazy(() => import('./pages/batch-process'));
 const PerformanceMonitor = lazy(() => import('./pages/performance-monitor'));
+const AutoDeploy = lazy(() => import('./pages/auto-deploy'));
 
 const routes = [
   { path: '/', component: Home, exact: true },
@@ -21,6 +22,7 @@ const routes = [
   { path: '/lazy-load', component: LazyLoad },
   { path: '/batch-process', component: BatchProcess },
   { path: '/performance-monitor', component: PerformanceMonitor },
+  { path: '/auto-deploy', component: AutoDeploy },
 ];
 
 export default routes;

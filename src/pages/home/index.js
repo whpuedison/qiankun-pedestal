@@ -49,6 +49,7 @@ function Home() {
           <span data-path="/lazy-load" >图片懒加载</span>
           <span data-path="/batch-process">消息批处理</span>
           <span data-path="/performance-monitor">性能监控</span>
+          <span data-path="/auto-deploy">CI/CD</span>
       </div>
     </React.Fragment>
   );

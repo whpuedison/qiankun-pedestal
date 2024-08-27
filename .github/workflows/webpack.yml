@@ -10,7 +10,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x, 22.x]
+        node-version: [18.x]
 
     steps:
     - uses: actions/checkout@v4
@@ -26,9 +26,18 @@ jobs:
         yarn build
 
     - name: Deploy 🚀
-      uses: JamesIves/github-pages-deploy-action@v4.4.1
-      with:
-        token: ${{ secrets.QIAN_KUN_TOKEN }}
-        BRANCH: deploy 
-        FOLDER: build
+      # uses: JamesIves/github-pages-deploy-action@v4.4.1
+      # with:
+      #   token: ${{ secrets.QIAN_KUN_TOKEN }}
+      #   BRANCH: deploy 
+      #   FOLDER: build
+      uses: easingthemes/ssh-deploy@v2.1.2
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        ARGS: '-rltgoDzvO --delete'
+        SOURCE: 'build/'
+        REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+        REMOTE_USER: ${{ secrets.REMOTE_USER }}
+        TARGET: ${{ secrets.REMOTE_TARGET }}
 
+  

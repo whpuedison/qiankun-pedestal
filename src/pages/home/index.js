@@ -43,13 +43,13 @@ function Home() {
         className={`${menuList} animate__animated animate__backInDown`}
         onClick={handlePageJump}
       >
-          <span data-path="/virtual-list">等高虚拟列表</span>
+          {/* <span data-path="/virtual-list">等高虚拟列表</span>
           <span data-path="/virtual-list-pro">不等高虚拟列表</span>
           <span data-path="/concurrent-request">并发请求等待</span>
           <span data-path="/lazy-load" >图片懒加载</span>
           <span data-path="/batch-process">消息批处理</span>
           <span data-path="/performance-monitor">性能监控</span>
-          <span data-path="/auto-deploy">CI/CD</span>
+          <span data-path="/auto-deploy">CI/CD</span> */}
       </div>
     </React.Fragment>
   );

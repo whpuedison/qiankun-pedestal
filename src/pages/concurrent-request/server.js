@@ -7,13 +7,14 @@ const app = new Koa();
 const router = new Router();
 
 // 模拟登录接口
-router.get('/api/userinfo', async (ctx) => {
+router.get('/api/userinfo/:id', async (ctx) => {
+    const { id } = ctx.params;
     // 使用 Mock.js 生成模拟数据
     const responseData = Mock.mock({
         'status': 200,
         'message': 'Login successful',
         'data': {
-            'token': '@guid', // 生成一个随机的 token
+            'token': id, // 生成一个随机的 token
         }
     });
 
